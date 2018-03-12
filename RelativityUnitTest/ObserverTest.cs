@@ -7,13 +7,16 @@ namespace RelativityUnitTest
     [TestClass]
     public class ObserverTest
     {
-        private Random _rnd = new Random();
+        private static Random _rnd = new Random();
+
+        private static double rand() => 2 * _rnd.NextDouble() - 1;
 
         [TestMethod]
         public void Observer_is_at_own_origin()
         {
-            var observer = Relativity.Observer.Default.Offset(_rnd.NextDouble(), _rnd.NextDouble(), _rnd.NextDouble());
+            var observer = Observer.Default.Offset(rand(), rand(), rand());
             Assert.IsTrue(observer.Origin.In(observer) == new Coordinate(0, 0));
         }
+
     }
 }
