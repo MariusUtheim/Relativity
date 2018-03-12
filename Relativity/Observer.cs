@@ -28,9 +28,22 @@ namespace Relativity
         {
             if (v < -1 || v > 1)
                 throw new ArgumentOutOfRangeException(nameof(v), "Observer moving faster than speed of light");
-            return new Observer(originT - this.Origin.T, originX - this.Origin.X, (_v + v) / (1 + _v * v));
+            return new Observer(this.Origin.T + originT, this.Origin.X + originX, (v + this._v) / (1 + v * this._v));
         }
 
-        public Coordinate Coord(SpacetimePoint p) => new Coordinate(p.T - Origin.T, p.X - Origin.X);
+        public Coordinate Coord(SpacetimePoint p)
+        {
+            var g = LorentzFactor(Observer.Default);
+            return new Coordinate(g * (p.T - Origin.T - _v * (p.X - Origin.X)), g * (p.X - Origin.X - _v * (p.T - Origin.T)));
+        }
+
+
+        public SpacetimePoint Point(double t, double x)
+        {
+            var g = LorentzFactor(Observer.Default);
+            return new SpacetimePoint(Origin.T + g * (t + _v * x), Origin.X + g * (x + _v * t));
+        }
+        public SpacetimePoint Point(Coordinate coords) => Point(coords.T, coords.X);
+      
     }
 }
