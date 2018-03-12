@@ -15,10 +15,12 @@ namespace Relativity
         public double T { get; }
         public double X { get; }
 
-        public bool Equals(Coordinate c) => this.X == c.X && this.T == c.T;
+        public bool Equals(Coordinate c) => (this.T - c.T < 1.0e-10) && (this.X - c.X < 1.0e-10);
         public override bool Equals(object obj) => obj is Coordinate ? Equals((Coordinate)obj) : false;
         public override int GetHashCode() => T.GetHashCode() ^ X.GetHashCode();
-        public static bool operator ==(Coordinate c1, Coordinate c2) => c1.T == c2.T && c1.X == c2.X;
-        public static bool operator !=(Coordinate c1, Coordinate c2) => c1.T != c2.T || c1.X != c2.X;
+        public static bool operator ==(Coordinate c1, Coordinate c2) => c1.Equals(c2);
+        public static bool operator !=(Coordinate c1, Coordinate c2) => !c1.Equals(c2);
+
+        public override string ToString() => $"({T}; {X})";
     }
 }
