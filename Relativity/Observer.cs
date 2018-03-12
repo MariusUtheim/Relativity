@@ -37,6 +37,11 @@ namespace Relativity
             return new Coordinate(g * (p.T - Origin.T - _v * (p.X - Origin.X)), g * (p.X - Origin.X - _v * (p.T - Origin.T)));
         }
 
+        public Coordinate Coord(FourVector v)
+        {
+            var g = LorentzFactor(Observer.Default);
+            return new Coordinate(g * (v.Dt - _v * v.Dx), g * (v.Dx - _v * v.Dt));
+        }
 
         public SpacetimePoint Point(double t, double x)
         {
