@@ -3,3 +3,7 @@
 ################################################################################
 
 /.vs/Relativity/v15
+/Relativity/bin/Debug/netstandard1.6
+/Relativity/obj
+/RelativityUnitTest/bin/Debug
+/RelativityUnitTest/obj/Debug
