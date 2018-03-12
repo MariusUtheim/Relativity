@@ -50,5 +50,11 @@ namespace Relativity
         }
         public SpacetimePoint Point(Coordinate coords) => Point(coords.T, coords.X);
       
+        public FourVector Vector(double t, double x)
+        {
+            var g = LorentzFactor(Observer.Default);
+            return new FourVector(g * (t + _v * x), g * (x + _v * t));
+        }
+        public FourVector Vector(Coordinate coords) => Vector(coords.T, coords.X);
     }
 }
