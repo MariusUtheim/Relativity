@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{6D581285-9803-4930-9D4C-29587D19C9EC}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Relativity.Visualization</RootNamespace>
+    <AssemblyName>Visualization</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ExternalConsole>true</ExternalConsole>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ExternalConsole>true</ExternalConsole>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="GRaff">
+      <HintPath>..\..\..\G-Raff\GRaff\bin\Debug\GRaff.dll</HintPath>
+    </Reference>
+    <Reference Include="GRaff.Extensions">
+      <HintPath>..\..\..\G-Raff\GRaff.Extensions\bin\Debug\GRaff.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\net461\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="mscorlib" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SpacetimeDiagram.cs" />
+    <Compile Include="SpacetimeEvent.cs" />
+    <Compile Include="ISpacetimeElement.cs" />
+    <Compile Include="Axes.cs" />
+    <Compile Include="StringModel.cs" />
+    <Compile Include="SpacetimeDiagramCanvas.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Relativity\Relativity.csproj">
+      <Project>{C4D60D0E-B680-4A8E-AA67-B6F5A4723870}</Project>
+      <Name>Relativity</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

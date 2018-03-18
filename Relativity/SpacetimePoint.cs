@@ -4,16 +4,34 @@ namespace Relativity
 {
     public struct SpacetimePoint
     {
+        private double _t, _x;
+
         internal SpacetimePoint(double t, double x)
         {
-            this.T = t;
-            this.X = x;
+            this._t = t;
+            this._x = x;
         }
 
-        internal double T { get; }
-        internal double X { get; }
+        public SpacetimePoint Create(double t, double x)
+        {
+            return new SpacetimePoint(ReferenceFrame.LorentzFactor * (t + ReferenceFrame.Velocity * x),
+                                      ReferenceFrame.LorentzFactor * (x + ReferenceFrame.Velocity * t));
+        }
+
+        internal double T => _t;//ReferenceFrame.LorentzFactor * (_t - ReferenceFrame.Velocity * _x);
+        internal double X => _x;//ReferenceFrame.LorentzFactor * (_x - ReferenceFrame.Velocity * _t);
 
         public Coordinate In(Observer observer) => observer.Coord(this);
+
+        public SpacetimePoint ProperOffset(double dt, double dx) => new SpacetimePoint(T + dt, X + dx);
+
+        public SpacetimePoint Boosted(double v)
+        {
+            if (v <= -1 || v >= 1)
+                throw new ArgumentOutOfRangeException(nameof(v), "Trying to boost to faster than speed of light");
+            var g = 1 / Math.Sqrt(1 - v * v);
+            return new SpacetimePoint(g * (T - v * X), g * (X - v * T));
+        }
 
         public bool Equals(SpacetimePoint c) => (this.T - c.T < 1.0e-10) && (this.X - c.X < 1.0e-10);
         public override bool Equals(object obj) => obj is SpacetimePoint ? Equals((SpacetimePoint)obj) : false;
