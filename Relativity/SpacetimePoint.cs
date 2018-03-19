@@ -18,8 +18,8 @@ namespace Relativity
                                       ReferenceFrame.LorentzFactor * (x + ReferenceFrame.Velocity * t));
         }
 
-        internal double T => _t;//ReferenceFrame.LorentzFactor * (_t - ReferenceFrame.Velocity * _x);
-        internal double X => _x;//ReferenceFrame.LorentzFactor * (_x - ReferenceFrame.Velocity * _t);
+        public double T => _t;//ReferenceFrame.LorentzFactor * (_t - ReferenceFrame.Velocity * _x);
+        public double X => _x;//ReferenceFrame.LorentzFactor * (_x - ReferenceFrame.Velocity * _t);
 
         public Coordinate In(Observer observer) => observer.Coord(this);
 

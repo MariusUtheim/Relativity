@@ -21,16 +21,20 @@ namespace Relativity.Visualization
 
             diagram = Instance<SpacetimeDiagram>.Create();
 
-            stringModel = new StringModel(Observer.Default.Origin.ProperOffset(-0.8, 0), 0, 0.5, 0);
-            stringModel.Lifetime = 0.65;
-            var (l, r) = stringModel.Fragment(0.3, 0.25);
+            stringModel = new StringModel(Observer.Default.Origin.ProperOffset(-0.8, 0), 0.631, 0, 0, 0.45);
             diagram.Elements.Add(stringModel);
+
+            var (l, r) = stringModel.Fragment(0.6, 2.5, 2.5);
             diagram.Elements.Add(l);
             diagram.Elements.Add(r);
+            //
+            //(l, r) = r.Fragment(0.45, 1, 1);
+            //diagram.Elements.Add(l);
+            //diagram.Elements.Add(r);
 
             var rnd = new Random();
-            for (int i = 0; i < 10; i++)
-                diagram.Elements.Add(new SpacetimeEvent(Observer.Default.Point(rnd.NextDouble() - 0.5, rnd.NextDouble() - 0.5)));
+       //     for (int i = 0; i < 10; i++)
+       //         diagram.Elements.Add(new SpacetimeEvent(Observer.Default.Point(rnd.NextDouble() - 0.5, rnd.NextDouble() - 0.5)));
             
             GlobalEvent.BeginStep += GlobalEvent_BeginStep;
         }

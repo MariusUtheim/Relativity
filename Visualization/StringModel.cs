@@ -6,157 +6,235 @@ namespace Relativity.Visualization
 {
     public class StringModel : ISpacetimeElement
     {
-        public StringModel(SpacetimePoint origin, double initialEnergy, double totalEnergy, double totalMomentum)
+        private double _leftLeg, _rightLeg, _period; 
+
+        public StringModel(SpacetimePoint origin, double initialEnergy, double leftMomentum, double rightMomentum, double lifetime)
         {
-            if (initialEnergy < 0 || totalEnergy < 0 || initialEnergy > totalEnergy || GMath.Abs(totalMomentum) > totalEnergy)
-                throw new ArgumentException();
-            Origin = origin;
-            InitialEnergy = initialEnergy;
-            var v = totalMomentum / totalEnergy;
-            LorentzFactor = 1 / GMath.Sqrt(1 - v * v);
-            RestEnergy = LorentzFactor * (totalEnergy + v * totalMomentum);
-            Momentum = totalMomentum;
+            this.Origin = origin;
+            this.InitialEnergy = initialEnergy;
+            this.LeftInitialMomentum = leftMomentum;
+            this.RightInitialMomentum = rightMomentum;
+            this.TotalEnergy = initialEnergy + Abs(leftMomentum) + Abs(rightMomentum);
+            this.Lifetime = lifetime;
         }
 
         public SpacetimePoint Origin { get; }
         public double InitialEnergy { get; }
         public double LeftInitialMomentum { get; }
         public double RightInitialMomentum { get; }
-        public double RestEnergy { get; }
-        public double Momentum { get; }
-        public double Lifetime { get; set; }
-        public double LorentzFactor { get; }
-
-        private double _offset(double t)
-        {
-            var directEnergy = t + InitialEnergy / 2;
-            var periodEnergy = GMath.Remainder(directEnergy, RestEnergy);
-            if (periodEnergy > RestEnergy / 2)
-                periodEnergy = RestEnergy - periodEnergy;
-
-            return 2 * periodEnergy;
-        }
+        public double TotalEnergy { get; }
+        public double Lifetime { get; }
+        public double StringVelocity => (LeftInitialMomentum + RightInitialMomentum) / TotalEnergy;
 
         public void Draw(Func<SpacetimePoint, Point> T)
         {
-            var leftVertex = Origin.ProperOffset(0, InitialEnergy / 2);
+            var leftVertex = Origin.ProperOffset(0, -InitialEnergy / 2);
             var rightVertex = Origin.ProperOffset(0, InitialEnergy / 2);
+
             var leftMomentum = LeftInitialMomentum;
             var rightMomentum = RightInitialMomentum;
 
             var remainingLifetime = Lifetime;
 
-            while (true)
+            while (remainingLifetime > 0)
             {
                 double timeStep;
-                if (leftMomentum * rightMomentum > 0)
+                SpacetimePoint nextLeftVertex, nextRightVertex;
+
+                if (leftMomentum * rightMomentum < 0)
+                {
                     timeStep = Min(Abs(leftMomentum), Abs(rightMomentum));
-                else if (leftMomentum == 0 || rightMomentum == 0)
-                    timeStep = Abs((leftVertex - rightVertex).In(Observer.Default).X);
+                    var s = Sign(leftMomentum);
+                    nextLeftVertex = leftVertex.ProperOffset(timeStep, timeStep * s);
+                    nextRightVertex = rightVertex.ProperOffset(timeStep, -timeStep * s);
+                }
+                else if (leftMomentum == 0 && rightMomentum == 0)
+                {
+                    timeStep = TotalEnergy / 2;
+                    // ensure that next left is to the right of the current left, in case
+                    // we are currently at maximal energy
+                    nextLeftVertex = leftVertex.ProperOffset(timeStep, timeStep);
+                    nextRightVertex = rightVertex.ProperOffset(timeStep, -timeStep);
+                }
+                else if (leftMomentum * rightMomentum > 0)
+                {
+                    var s = Sign(leftMomentum);
+                    timeStep = Min(Abs(leftMomentum), Abs(rightMomentum));
+                    nextLeftVertex = leftVertex.ProperOffset(timeStep, s * timeStep);
+                    nextRightVertex = rightVertex.ProperOffset(timeStep, s * timeStep);
+                }
+                else // if one momentum is zero, but not both
+                {
+                    if (leftMomentum == 0)
+                    {
+                        if (rightMomentum > 0)
+                        {
+                            timeStep = rightMomentum;
+                            nextLeftVertex = leftVertex.ProperOffset(timeStep, rightMomentum);
+                            nextRightVertex = rightVertex.ProperOffset(timeStep, rightMomentum);
+                        }
+                        else
+                        {
+                            timeStep = Abs((rightVertex.X - leftVertex.X) / 2);
+                            nextLeftVertex = leftVertex.ProperOffset(timeStep, timeStep);
+                            nextRightVertex = rightVertex.ProperOffset(timeStep, -timeStep);
+                        }
+                    }
+                    else // if (rightMomentum == 0)
+                    {
+                        if (leftMomentum < 0)
+                        {
+                            timeStep = Abs(leftMomentum);
+                            nextLeftVertex = leftVertex.ProperOffset(timeStep, leftMomentum);
+                            nextRightVertex = rightVertex.ProperOffset(timeStep, -timeStep);
+                        }
+                        else
+                        {
+                            timeStep = (rightVertex.X - leftVertex.X) / 2;
+                            nextLeftVertex = leftVertex.ProperOffset(timeStep, timeStep);
+                            nextRightVertex = rightVertex.ProperOffset(timeStep, -timeStep);
+                        }
+                    }
+                }
+
+                if (timeStep <= remainingLifetime)
+                {
+                    GRaff.Draw.FillTriangle(T(leftVertex), T(nextLeftVertex), T(nextRightVertex), Colors.Orange);
+                    GRaff.Draw.FillTriangle(T(leftVertex), T(nextRightVertex), T(rightVertex), Colors.Orange);
+                    GRaff.Draw.Line(T(leftVertex), T(nextLeftVertex), Colors.Black);
+                    GRaff.Draw.Line(T(rightVertex), T(nextRightVertex), Colors.Black);
+
+                    leftMomentum += timeStep;
+                    rightMomentum -= timeStep;
+                                        
+                    if (nextLeftVertex.X < nextRightVertex.X)
+                        (leftVertex, rightVertex) = (nextLeftVertex, nextRightVertex);
+                    else if (nextLeftVertex.X == nextRightVertex.X)
+                    {
+                        (leftVertex, rightVertex) = (nextRightVertex, nextLeftVertex);
+                        (leftMomentum, rightMomentum) = (rightMomentum, leftMomentum);
+                    }
+                    else
+                        throw new Exception();
+                    
+                    remainingLifetime -= timeStep;
+                }
                 else
-                    timeStep = 
+                {
+                    nextLeftVertex = leftVertex.ProperOffset(remainingLifetime, (leftMomentum < 0 ? -1 : +1) * remainingLifetime);
+                    nextRightVertex = rightVertex.ProperOffset(remainingLifetime, (rightMomentum > 0 ? +1 : -1) * remainingLifetime);
+                    GRaff.Draw.FillTriangle(T(leftVertex), T(nextLeftVertex), T(nextRightVertex), Colors.Orange);
+                    GRaff.Draw.FillTriangle(T(leftVertex), T(nextRightVertex), T(rightVertex), Colors.Orange);
+                    GRaff.Draw.Line(T(leftVertex), T(nextLeftVertex), Colors.Black);
+                    GRaff.Draw.Line(T(rightVertex), T(nextRightVertex), Colors.Black);
+                    break;
+                }
+
             }
 
-            var initialLeft = Origin.ProperOffset(0, -InitialEnergy / 2);
-            var initialRight = Origin.ProperOffset(0, InitialEnergy / 2);
+            //var t = Mouse.WindowY / (double)Window.Height;
+            //GRaff.Draw.FillRectangle(T(Origin.ProperOffset(t, _leftZ(t))), (0.01, 0.01), Colors.Red);
+            //GRaff.Draw.FillRectangle(T(Origin.ProperOffset(t, _rightZ(t))), (0.01, 0.01), Colors.Blue);
+            //
+            //for (var i = 0; i < 3; i++)
+            //    GRaff.Draw.FillRectangle(T(Origin.ProperOffset(i * (h + k) - tOffset, (i * (h + k) - tOffset) * StringVelocity)), (0.01, 0.01), Colors.Black);
 
-            // Draw first part (which might be broken)
-            if (InitialEnergy + 2 * Lifetime < RestEnergy)
-            {
-                var finalLeft = Origin.ProperOffset(Lifetime, -InitialEnergy / 2 - Lifetime);
-                var finalRight = Origin.ProperOffset(Lifetime, InitialEnergy / 2 + Lifetime);
-                GRaff.Draw.Line(T(initialLeft), T(finalLeft), Colors.Black);
-                GRaff.Draw.Line(T(initialRight), T(finalRight), Colors.Black);
-                return;
-            }
-            else
-            {
-                var finalLeft = Origin.ProperOffset((RestEnergy - InitialEnergy) / 2, -RestEnergy / 2);
-                var finalRight = Origin.ProperOffset((RestEnergy - InitialEnergy) / 2, RestEnergy / 2);
-                GRaff.Draw.Line(T(initialLeft), T(finalLeft), Colors.Black);
-                GRaff.Draw.Line(T(initialRight), T(finalRight), Colors.Black);
-            }
-
-            if (InitialEnergy + 2 * Lifetime < RestEnergy * 2)
-            {
-                var secondLeft = Origin.ProperOffset((RestEnergy - InitialEnergy) / 2, -RestEnergy / 2);
-                var secondRight = Origin.ProperOffset((RestEnergy - InitialEnergy) / 2, RestEnergy / 2);
-                var finalLeft = secondLeft.ProperOffset(Lifetime - (RestEnergy - InitialEnergy) / 2, Lifetime - (RestEnergy - InitialEnergy) / 2);
-                var finalRight = secondRight.ProperOffset(Lifetime - (RestEnergy - InitialEnergy) / 2, -(Lifetime - (RestEnergy - InitialEnergy) / 2));
-                GRaff.Draw.Line(T(secondLeft), T(finalLeft), Colors.Black);
-                GRaff.Draw.Line(T(secondRight), T(finalRight), Colors.Black);
-                return;
-            }
-            else
-            {
-                var secondLeft = Origin.ProperOffset((RestEnergy - InitialEnergy) / 2, -RestEnergy / 2);
-                var secondRight = Origin.ProperOffset((RestEnergy - InitialEnergy) / 2, RestEnergy / 2);
-                var final = Origin.ProperOffset(RestEnergy - InitialEnergy / 2, 0);
-                GRaff.Draw.Line(T(secondLeft), T(final), Colors.Black);
-                GRaff.Draw.Line(T(secondRight), T(final), Colors.Black);
-            }
-
-
-            // Draw all the complete parts
-            var vertex = Origin.ProperOffset(RestEnergy - InitialEnergy / 2, 0);
-            var remainingLifetime = Lifetime - (RestEnergy - InitialEnergy / 2);
-
-            for (; remainingLifetime > RestEnergy; remainingLifetime -= RestEnergy)
-            {
-                var left = vertex.ProperOffset(RestEnergy / 2, -RestEnergy / 2);
-                var right = vertex.ProperOffset(RestEnergy / 2, RestEnergy / 2);
-                var nextVertex = vertex.ProperOffset(RestEnergy, 0);
-                GRaff.Draw.Line(T(vertex), T(left), Colors.Black);
-                GRaff.Draw.Line(T(vertex), T(right), Colors.Black);
-                GRaff.Draw.Line(T(left), T(nextVertex), Colors.Black);
-                GRaff.Draw.Line(T(right), T(nextVertex), Colors.Black);
-                vertex = nextVertex;
-            }
-
-
-            // Draw final part
-            if (remainingLifetime < RestEnergy / 2)
-            {
-                var left = vertex.ProperOffset(remainingLifetime, -remainingLifetime);
-                var right = vertex.ProperOffset(remainingLifetime, remainingLifetime);
-                GRaff.Draw.Line(T(vertex), T(left), Colors.Black);
-                GRaff.Draw.Line(T(vertex), T(right), Colors.Black);
-            }
-            else
-            {
-                var left = vertex.ProperOffset(RestEnergy / 2, -RestEnergy / 2);
-                var right = vertex.ProperOffset(RestEnergy / 2, RestEnergy / 2);
-                GRaff.Draw.Line(T(vertex), T(left), Colors.Black);
-                GRaff.Draw.Line(T(vertex), T(right), Colors.Black);
-
-                remainingLifetime -= RestEnergy / 2;
-                var nextLeft = left.ProperOffset(remainingLifetime, remainingLifetime);
-                var nextRight = right.ProperOffset(remainingLifetime, -remainingLifetime);
-                GRaff.Draw.Line(T(left), T(nextLeft), Colors.Black);
-                GRaff.Draw.Line(T(right), T(nextRight), Colors.Black);
-            }
         }
 
 
-        public (StringModel, StringModel) Fragment(double z, double newLifetime)
+        private double q => Sqrt((1 + StringVelocity) / (1 - StringVelocity));
+        private double h => 0.5 * TotalEnergy * q;
+        private double k => 0.5 * TotalEnergy / q;
+        private double tOffset
+        {
+            get
+            {
+                if (LeftInitialMomentum == 0 && RightInitialMomentum == 0)
+                    return InitialEnergy / 2;
+                else if (LeftInitialMomentum < 0 && RightInitialMomentum > 0)
+                    return InitialEnergy / 2;
+                else if (LeftInitialMomentum >= 0 && RightInitialMomentum <= 0)
+                    return h + k - InitialEnergy;
+                else if (LeftInitialMomentum < 0 && RightInitialMomentum < 0)
+                    return -RightInitialMomentum + h;
+                else // if (LeftInitialMomentum > 0 && RightInitialMomentum > 0)
+                    return LeftInitialMomentum + k;
+            }
+        }
+
+        private double _leftZ(double t)
+        {
+            t += tOffset;
+
+            var remainder = (t % (h + k));
+            var halfPeriods = (t - remainder) / (h + k);
+
+            if (remainder < k)
+                return -(k - h) * halfPeriods - remainder;
+            else
+                return -(k - h) * halfPeriods - k + (remainder - k);
+        }
+
+        private double _rightZ(double t)
+        {
+            t += tOffset;
+
+            var remainder = (t % (h + k));
+            var halfPeriods = (t - remainder) / (h + k);
+
+            if (remainder < h)
+                return (h - k) * halfPeriods + remainder;
+            else
+                return (h - k) * halfPeriods + h - (remainder - h);
+        }
+
+        private double _leftP(double t)
+        {
+            t -= tOffset;
+
+            var remainder = (t % (2 * h + 2 * k));
+
+            if (remainder < h + k)
+                return -k + remainder;
+            else
+                return h - (remainder - h - k);
+        }
+
+        private double _rightP(double t)
+        {
+            t -= tOffset;
+
+            var remainder = (t % (2 * h + 2 * k));
+
+            if (remainder < h + k)
+                return h - remainder;
+            else
+                return -k + (remainder - h - k);
+        }
+
+
+
+        public (StringModel, StringModel) Fragment(double z, double leftLifetime, double rightLifetime)
         {
             if (z <= 0 || z >= 1)
                 throw new ArgumentOutOfRangeException(nameof(z));
+            
+            var leftOffset = _leftZ(Lifetime);
+            var rightOffset = _rightZ(Lifetime);
+            var Et = rightOffset - leftOffset;
+            var center = (leftOffset + rightOffset) / 2.0;
 
-            var Et = GMath.Abs(_offset(Lifetime));
             var q = 2 * z - 1;
-            var left = new StringModel(Origin.ProperOffset(Lifetime, Et/2 * (q - 1) / 2), 
-                                       z * Et, 
-                                       (RestEnergy - Et) / 2 + z * Et, 
-                                       -(RestEnergy - Et) / 2) { Lifetime = newLifetime };
-            var right = new StringModel(Origin.ProperOffset(Lifetime, Et/2 * (q + 1) / 2), 
-                                        (1 - z) * Et,
-                                        (RestEnergy - Et) / 2 + (1 - z) * Et, 
-                                        (RestEnergy - Et) / 2) { Lifetime = newLifetime };
-
+            var left = new StringModel(Origin.ProperOffset(Lifetime, center + Et / 2 * (q - 1) / 2),
+                                        z * Et,
+                                        _leftP(Lifetime), 0, leftLifetime);
+            var right = new StringModel(Origin.ProperOffset(Lifetime, center + Et / 2 * (q + 1) / 2),
+                                         (1 - z) * Et,
+                                         0, _rightP(Lifetime), rightLifetime);
 
             return (left, right);
         }
-
+       
     }
+
 }

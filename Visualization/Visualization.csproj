@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -29,10 +29,10 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="GRaff">
-      <HintPath>..\..\..\G-Raff\GRaff\bin\Debug\GRaff.dll</HintPath>
+      <HintPath>C:\Users\Marius\Source\Repos\GRaff\GRaff\bin\Debug\GRaff.dll</HintPath>
     </Reference>
     <Reference Include="GRaff.Extensions">
-      <HintPath>..\..\..\G-Raff\GRaff.Extensions\bin\Debug\GRaff.Extensions.dll</HintPath>
+      <HintPath>C:\Users\Marius\Source\Repos\GRaff\GRaff.Extensions\bin\Debug\GRaff.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System.ValueTuple">
       <HintPath>..\packages\System.ValueTuple.4.4.0\lib\net461\System.ValueTuple.dll</HintPath>
@@ -46,8 +46,8 @@
     <Compile Include="SpacetimeEvent.cs" />
     <Compile Include="ISpacetimeElement.cs" />
     <Compile Include="Axes.cs" />
-    <Compile Include="StringModel.cs" />
     <Compile Include="SpacetimeDiagramCanvas.cs" />
+    <Compile Include="StringModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Relativity\Relativity.csproj">
